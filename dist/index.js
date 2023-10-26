@@ -42359,7 +42359,7 @@ function main() {
             else {
                 const { tagList } = (0, util_1.parseLernaCommit)(message);
                 const dingdingChangelogArr = [];
-                yield tagList.forEach((tag) => __awaiter(this, void 0, void 0, function* () {
+                for (let tag of tagList) {
                     const { shortPackageName, version } = (0, util_1.parseLernaTag)(tag);
                     const releaseArr = [];
                     const dingdingArr = [];
@@ -42372,13 +42372,13 @@ function main() {
                             const { data } = yield axios_1.default.get(changelogUrl);
                             const [changelog, changelogPre] = (0, util_1.getChangelog)(data, version, prettier !== '');
                             if (changelog) {
-                                info(`${tag} changelog:`);
+                                info(`\n${tag} changelog:\n`);
                                 info(changelog);
                                 releaseArr.push(changelog);
                             }
                             // only push changelog for dingding
                             if (changelogPre && dingdingChangelogPathArr.includes(changelogPath)) {
-                                info(`${tag} changelog for dingding:`);
+                                info(`\n${tag} changelog for dingding:\n`);
                                 info(changelogPre);
                                 dingdingArr.push(changelogPre);
                             }
@@ -42407,7 +42407,7 @@ function main() {
                     else {
                         info(`[Actions] Skip release ${tag}`);
                     }
-                }));
+                }
                 if (dingdingToken) {
                     let log = dingdingChangelogArr.map(item => {
                         return `## ${item.tag}\n${item.changelog}`;
