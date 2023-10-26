@@ -1,15 +1,23 @@
 import { exec } from '@actions/exec';
 
-export const parseTag = (str: string) => {
-  const match1 = str.match(/(\S+)@(\S+)/);
+export const parseLernaTag = (tag: string) => {
+  const match1 = tag.match(/(\S+)@(\S+)/);
   const packageName = (match1 && match1[1]) as string;
   const version = (match1 && match1[2]) as string;
-  const match2 = str.match(/^@(\S+)\/(\S+)@(\S+)/);
+  const match2 = tag.match(/^@(\S+)\/(\S+)@(\S+)/);
   const shortPackageName = (match2 && match2[2]) as string;
   return {
     packageName,
     shortPackageName,
     version,
+  }
+}
+
+// message example: "Publish\n\n - @oceanbase/charts@0.2.15\n - @oceanbase/codemod@0.2.7\n - @oceanbase/design@0.2.24\n - @oceanbase/icons@0.2.9\n - @oceanbase/ui@0.2.25\n - @oceanbase/util@0.2.11"
+export const parseLernaCommit = (message: string) => {
+  const tagList = message.split('\n - ').filter(item => item.startsWith('@'));
+  return {
+    tagList,
   }
 }
 
@@ -42,22 +50,6 @@ export const getChangelog = (content: string, version: string, prettier: boolean
     }
   }
   return [changeLog.join('\n'), changeLogPre.join('\n')];
-};
-
-export const filterChangelogs = (changelogArr: string[], filter: string, arr: string[]): string => {
-  let result = '';
-  changelogArr.forEach((item, index) => {
-    if (item === filter) {
-      result = arr[index];
-    }
-  });
-  return result;
-};
-
-export const replaceMsg = (msg: string, version: string, owner: string, repo: string) => {
-  return msg
-    .replace('{{v}}', version)
-    .replace('{{url}}', `https://github.com/${owner}/${repo}/releases`);
 };
 
 export const execOutput = async (command: string) => {

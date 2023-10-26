@@ -14,8 +14,6 @@ inputs:
     default: ${{ github.token }}
   dingding-token:
     description: 'DingTalk token'
-  dingding-msg:
-    description: 'DingTalk message'
   dingding-delay-minute:
     description: 'DingTalk notice setTimeout'
   msg-title:
@@ -38,6 +36,8 @@ inputs:
     description: 'Tag for conch'
   changelogs:
     description: 'Changelogs'
+  dingding-changelogs:
+    description: 'Changelogs for DingTalk'
   draft:
     description: 'Release draft'
   prerelease:

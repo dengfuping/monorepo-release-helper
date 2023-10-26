@@ -3,7 +3,7 @@ import * as github from '@actions/github';
 import { Octokit } from '@octokit/rest';
 import { dealStringToArr } from 'actions-util';
 import axios from 'axios';
-import { parseTag, execOutput, filterChangelogs, getChangelog, replaceMsg } from './util';
+import { parseLernaCommit, parseLernaTag, getChangelog } from './util';
 
 // **********************************************************
 async function main(): Promise<void> {
@@ -13,203 +13,132 @@ async function main(): Promise<void> {
     const octokit = new Octokit({ auth: `token ${token}` });
 
     const dingdingToken = core.getInput('dingding-token');
-    const dingdingMsg = core.getInput('dingding-msg');
-    const dingdingIgnore = core.getInput('dingding-ignore');
-
-    const triger = core.getInput('triger');
-    const trigger = core.getInput('trigger') || triger;
-    let branch = core.getInput('branch');
-    const branches = dealStringToArr(branch);
-    const tag = core.getInput('tag');
-    const tags = dealStringToArr(tag);
-    const conchTag = core.getInput('conch-tag');
-    const conchTags = dealStringToArr(conchTag);
     const changelogs = core.getInput('changelogs');
-
-    const latest = core.getInput('latest');
-    let makeLatest = 'true';
-
-    const draft = core.getInput('draft') || false;
-    const prerelease = core.getInput('prerelease') || false;
-    const prereleaseFilter = core.getInput('prerelease-filter');
-    const prereleaseNotice = core.getInput('prerelease-notice') || false;
-
+    const dingdingChangelogs = core.getInput('dingding-changelogs');
+    const branch = core.getInput('branch');
     const prettier = core.getInput('prettier');
+
+    const changelogPathArr = dealStringToArr(changelogs);
+    const dingdingChangelogPathArr = dealStringToArr(dingdingChangelogs);
 
     const { owner, repo } = github.context.repo;
     const { info, error } = core;
-
     info(`owner: ${owner}, repo: ${repo}`);
-    const { ref_type: refType, ref } = github.context.payload;
-    info(`ref_type: ${refType}, ref: ${ref}`);
-    const { packageName, shortPackageName, version } = parseTag(ref);
-    info(`packageName: ${packageName}, ref: ${ref}, shortPackageName: ${shortPackageName}, version: ${version}`);
-    info(`github.context.payload: ${JSON.stringify(github.context.payload)}`)
 
-    // if (refType !== trigger) {
-    //   error("[Actions] The input 'trigger' not match actions 'on'");
-    //   return;
-    // }
-    let conch = 'conch';
-    info(`tags: ${JSON.stringify(tags)}`);
-    if (tags && tags.length) {
-      for (let i = 0; i < tags.length; i++) {
-        let t = tags[i];
-        t = t.replace('*', '');
-        if ((version + '').startsWith(t)) {
-          branch = branches[i] || '';
-          conch = conchTags[i] || 'conch';
-          break;
-        }
-      }
-    }
-    info(`branch: ${branch}`);
-
-    if (latest) {
-      const l = latest.replace('*', '');
-      if ((version + '').startsWith(l)) {
-        makeLatest = 'true';
-      } else {
-        makeLatest = 'false';
-      }
-    }
-
-    const real = [];
-    const arr = [];
-    const changelogArr = dealStringToArr(changelogs);
-
-    let show = '';
-    if (branch) {
-      const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
-      info(`url: ${url}`);
-      for (let i = 0; i < changelogArr.length; i += 1) {
-        const changelogPath = changelogArr[i];
-        // match changelog path by shortPackageName
-        if (changelogPath.includes(shortPackageName)) {
-          const { data } = await axios.get(`${url}/${changelogArr[i]}`);
-          const [changelog, changelogPre] = getChangelog(data, version, prettier !== '');
-          arr.push(changelog);
-          real.push(changelogPre);
-          if (changelog && i !== changelogArr.length - 1) {
-            arr.push('---');
-          }
-        }
-      }
-      show = arr.join('\n');
-    }
-
-    let pre = Boolean(prerelease);
-    if (prereleaseFilter) {
-      const filters = dealStringToArr(prereleaseFilter);
-      // eslint-disable-next-line no-restricted-syntax
-      for (const fil of filters) {
-        if (version.includes(fil)) {
-          info(`[Actions] [Version: ${version}] include ${fil}! Go prerelease!`);
-          pre = true;
-          break;
-        }
-      }
-    }
-
-    const release = core.getInput('release');
-    if (release !== 'false') {
-      await octokit.repos.createRelease({
-        owner,
-        repo,
-        tag_name: ref,
-        name: ref,
-        body: show,
-        draft: !!draft,
-        prerelease: pre,
-        make_latest: makeLatest as any,
-      });
-      info(`[Actions] Success release ${ref}.`);
+    const { head_commit } = github.context.payload;
+    const { message } = head_commit;
+    if (!message.startsWith('Publish')) {
+      error('Invalid commit! Commit format should start `Publish` like lerna.')
+      return;
     } else {
-      info(`[Actions] Skip release ${ref}.`);
-    }
+      const { tagList } = parseLernaCommit(message);
+      const dingdingChangelogArr: { tag: string, dingdingArr: string[] }[] = [];
+      tagList.forEach(async tag => {
+        const { shortPackageName, version } = parseLernaTag(tag);
 
-    let ddNotice = !pre;
-    if (prereleaseNotice && pre) {
-      ddNotice = true;
-    }
+        const releaseArr = [];
+        const dingdingArr = [];
 
-    if (dingdingToken && ddNotice) {
-      if (dingdingIgnore) {
-        const ignores = dealStringToArr(dingdingIgnore);
-        // eslint-disable-next-line no-restricted-syntax
-        for (const ig of ignores) {
-          if (version.includes(ig)) {
-            info(`[Actions] [Version: ${version}] include ${ig}! Do ignore!`);
-            return;
+        const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
+        info(`url: ${url}`);
+
+        for (let i = 0; i < changelogPathArr.length; i += 1) {
+          const changelogPath = changelogPathArr[i];
+          // match changelog path by shortPackageName
+          if (changelogPath.includes(shortPackageName)) {
+            const { data } = await axios.get(`${url}/${changelogPathArr[i]}`);
+            const [changelog, changelogPre] = getChangelog(data, version, prettier !== '');
+            releaseArr.push(changelog);
+            if (changelog && i !== changelogPathArr.length - 1) {
+              releaseArr.push('---');
+            }
+
+            // only push changelog for dingding
+            if (dingdingChangelogPathArr.includes(changelogPath)) {
+              dingdingArr.push(changelogPre);
+            }
+            if (changelog && i !== changelogPathArr.length - 1) {
+              dingdingArr.push('\n\n');
+            }
           }
         }
-      }
+        dingdingChangelogArr.push({
+          tag,
+          dingdingArr,
+        })
 
-      let log = '';
-      if (dingdingMsg) {
-        log = filterChangelogs(changelogArr, dingdingMsg, real);
-      }
-      let msgTitle = core.getInput('msg-title');
-      const msgHead = core.getInput('msg-head');
-      const msgPoster = core.getInput('msg-poster');
-      const msgFooter = core.getInput('msg-footer');
-
-      const replaceMsg4Me = (msg: string) => {
-        return replaceMsg(msg, version, owner, repo);
-      };
-
-      if (msgTitle) {
-        msgTitle = replaceMsg4Me(msgTitle);
-      } else {
-        msgTitle = `# ${ref} 发布日志`;
-      }
-
-      if (msgHead) {
-        log = `${replaceMsg4Me(msgHead)}\n\n${log}`;
-      }
-
-      if (msgPoster) {
-        log = `![](${msgPoster})\n\n${log}`;
-      }
-
-      if (msgFooter) {
-        log += `\n\n${replaceMsg4Me(msgFooter)}`;
-      }
-
-      const time = core.getInput('dingding-delay-minute') || 0;
-      info(`[Actions] [time] ${time} start: ${Date.now()}`);
-
-      setTimeout(async () => {
-        info(`[Actions] [time] ${time} go: ${Date.now()}`);
-        const antdMsg = core.getInput('antd-conch-msg');
-        if (antdMsg) {
-          const result = await execOutput(`npm view antd dist-tags --json`);
-          const distTags = JSON.parse(result);
-          const conchTagTemp = distTags[conch];
-          if (conchTagTemp) {
-            log += `\n\n ${antdMsg}${conchTagTemp}`;
-          }
+        const release = core.getInput('release');
+        if (release !== 'false') {
+          await octokit.repos.createRelease({
+            owner,
+            repo,
+            tag_name: tag,
+            name: tag,
+            body: releaseArr.join('\n'),
+            draft: false,
+            prerelease: false,
+            make_latest: 'true',
+          });
+          info(`[Actions] Success release ${tag}.`);
+        } else {
+          info(`[Actions] Skip release ${tag}.`);
         }
-        const dingdingTokenArr = dingdingToken.split(' ');
-        /* eslint-disable no-await-in-loop, no-restricted-syntax */
-        for (const dingdingTokenKey of dingdingTokenArr) {
-          if (dingdingTokenKey) {
-            await axios.post(
-              `https://oapi.dingtalk.com/robot/send?access_token=${dingdingTokenKey}`,
-              {
-                msgtype: 'markdown',
-                markdown: {
-                  title: 'OceanBase Design 发布日志',
-                  text: `${msgTitle} \n\n ${log}`,
+      });
+
+      if (dingdingToken) {
+        let log = dingdingChangelogArr.map(item => {
+          return `## ${item.tag}\n${item.dingdingArr.join('')}`
+        }).join('---');
+        let msgTitle = core.getInput('msg-title');
+        const msgPoster = core.getInput('msg-poster');
+        let msgFooter = core.getInput('msg-footer');
+
+        if (msgPoster) {
+          log = `![](${msgPoster})\n\n${log}`;
+        }
+        if (msgTitle) {
+          log = `${msgTitle}\n\n${log}`
+        }
+        if (msgFooter) {
+          msgFooter = msgFooter.replace('{{url}}', `https://github.com/${owner}/${repo}/releases`)
+          log += `\n\n${msgFooter}`;
+        }
+
+        const time = core.getInput('dingding-delay-minute') || 0;
+        info(`[Actions] [time] ${time} start: ${Date.now().toLocaleString()}`);
+
+        setTimeout(async () => {
+          info(`[Actions] [time] ${time} go: ${Date.now().toLocaleString()}`);
+          const dingdingTokenArr = dingdingToken.split(' ');
+          /* eslint-disable no-await-in-loop, no-restricted-syntax */
+          for (const dingdingTokenKey of dingdingTokenArr) {
+            if (dingdingTokenKey) {
+              await axios.post(
+                `https://oapi.dingtalk.com/robot/send?access_token=${dingdingTokenKey}`,
+                {
+                  msgtype: 'markdown',
+                  markdown: {
+                    title: msgTitle,
+                    text: log,
+                  },
                 },
-              },
-            );
+              );
+            }
           }
-        }
 
-        info(`[Actions] Success post dingding message of ${ref}`);
-      }, +time * 1000 * 60);
+          const formatTagString = tagList.map((tag, index) => {
+            if (index === tagList.length - 1) {
+              return `- ${tag}`;
+            }
+            return `- ${tag}\n`;
+          }).join('')
+
+          info('[Actions] Success post dingding message for:');
+          info(formatTagString);
+        }, +time * 1000 * 60);
+      }
     }
+
   } catch (e: any) {
     core.error(`[Actions] Error: ${e.message}`);
   }
