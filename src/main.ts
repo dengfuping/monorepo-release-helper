@@ -36,7 +36,7 @@ async function main(): Promise<void> {
     } else {
       const { tagList } = parseLernaCommit(message);
       const dingdingChangelogArr: { tag: string, changelog: string }[] = [];
-      tagList.forEach(async tag => {
+      await tagList.forEach(async tag => {
         const { shortPackageName, version } = parseLernaTag(tag);
 
         const releaseArr = [];
@@ -47,20 +47,21 @@ async function main(): Promise<void> {
           // match changelog path by shortPackageName
           if (changelogPath.includes(shortPackageName)) {
             const changelogUrl = `${url}/${changelogPathArr[i]}`
-            info(`changelog url: ${changelogUrl}`);
+            info(`${tag} changelog url: ${changelogUrl}`);
 
             const { data } = await axios.get(changelogUrl);
             const [changelog, changelogPre] = getChangelog(data, version, prettier !== '');
-            info(`changelog: ${changelog}`);
 
-            if (changelog && i) {
+            if (changelog) {
+              info(`${tag} changelog:`);
+              info(changelog)
               releaseArr.push(changelog);
             }
 
-            info(`changelog: ${changelogPre}`);
-
             // only push changelog for dingding
             if (changelogPre && dingdingChangelogPathArr.includes(changelogPath)) {
+              info(`${tag} changelog for dingding:`);
+              info(changelogPre)
               dingdingArr.push(changelogPre);
             }
           }
@@ -68,7 +69,7 @@ async function main(): Promise<void> {
         if (dingdingArr.length > 0) {
           dingdingChangelogArr.push({
             tag,
-            changelog: dingdingArr.join('\n\n'),
+            changelog: dingdingArr.join(''),
           });
         }
 
