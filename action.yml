@@ -1,6 +1,6 @@
-name: 'Release Helper'
+name: 'Monorepo Release Helper'
 description: 'A GitHub Action that help you publish release.'
-author: 'xrkffgg'
+author: 'dengfuping'
 branding:
   icon: 'shield'
   color: 'purple'

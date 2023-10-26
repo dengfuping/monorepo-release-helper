@@ -2,17 +2,18 @@
   "private": true,
   "keywords": [
     "actions",
+    "monorepo",
     "release",
     "helper",
     "github"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/actions-cool/release-helper.git",
+    "url": "https://github.com/dengfuping/monorepo-release-helper.git",
     "branch": "main"
   },
   "license": "MIT",
-  "author": "xrkffgg",
+  "author": "dengfuping",
   "main": "src/main.ts",
   "scripts": {
     "build": "tsc",

@@ -1,5 +1,3 @@
-# @source: https://github.com/xrkffgg/gitignore/blob/master/.gitignore
-
 # production
 # /dist
 /docs-dist

@@ -1,12 +1,12 @@
 # 🌈 Release Helper
 
-![](https://img.shields.io/github/workflow/status/actions-cool/release-helper/CI?style=flat-square)
-[![](https://img.shields.io/badge/marketplace-release--helper-blueviolet?style=flat-square)](https://github.com/marketplace/actions/release-helper)
-[![](https://img.shields.io/github/v/release/actions-cool/release-helper?style=flat-square&color=orange)](https://github.com/actions-cool/release-helper/releases)
+![](https://img.shields.io/github/workflow/status/dengfuping/monorepo-release-helper/CI?style=flat-square)
+[![](https://img.shields.io/badge/marketplace-release--helper-blueviolet?style=flat-square)](https://github.com/marketplace/actions/monorepo-release-helper)
+[![](https://img.shields.io/github/v/release/dengfuping/monorepo-release-helper?style=flat-square&color=orange)](https://github.com/dengfuping/monorepo-release-helper/releases)
 
 🤖 A GitHub Action that help you publish release.
 
-> Mainly used `antd`. Suggest [**changelog**](https://github.com/ant-design/ant-design/blob/master/CHANGELOG.en-US.md) use the same format.
+> Mainly used [oceanbase/oceanbase-design](https://github.com/oceanbase/oceanbase-design). Suggest [**changelog**](https://github.com/oceanbase/oceanbase-design/blob/master/docs/design/design-CHANGELOG.md) use the same format.
 
 ## 🚀 Usage
 
@@ -24,7 +24,7 @@ jobs:
     steps:
       - name: make release
         if: github.event.ref_type == 'tag'
-        uses: actions-cool/release-helper@v2
+        uses: dengfuping/monorepo-release-helper@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           trigger: 'tag'
@@ -77,12 +77,8 @@ jobs:
 
 You are very welcome to try it out and put forward your comments. You can use the following methods:
 
-- Report bugs or consult with [Issue](https://github.com/actions-cool/release-helper/issues)
-- Submit [Pull Request](https://github.com/actions-cool/release-helper/pulls) to improve the code of `release-helper`
-
-也欢迎加入 钉钉交流群
-
-![](https://github.com/actions-cool/resources/blob/main/dingding.jpeg?raw=true)
+- Report bugs or consult with [Issue](https://github.com/dengfuping/monorepo-release-helper/issues)
+- Submit [Pull Request](https://github.com/dengfuping/monorepo-release-helper/pulls) to improve the code of `release-helper`
 
 ## LICENSE
 
