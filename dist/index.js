@@ -42360,8 +42360,10 @@ function main() {
             const { owner, repo } = github.context.repo;
             const { info, error } = core;
             info(`owner: ${owner}, repo: ${repo}`);
-            const { ref_type: refType, ref: version } = github.context.payload;
-            info(`ref_type: ${refType}, ref: ${version}`);
+            const { ref_type: refType, ref } = github.context.payload;
+            info(`ref_type: ${refType}, ref: ${ref}`);
+            const { packageName, shortPackageName, version } = (0, util_1.parseTag)(ref);
+            info(`packageName: ${packageName}, ref: ${ref}, shortPackageName: ${shortPackageName}, version: ${version}`);
             info(`github.context.payload: ${JSON.stringify(github.context.payload)}`);
             // if (refType !== trigger) {
             //   error("[Actions] The input 'trigger' not match actions 'on'");
@@ -42398,13 +42400,16 @@ function main() {
                 const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
                 info(`url: ${url}`);
                 for (let i = 0; i < changelogArr.length; i += 1) {
-                    // eslint-disable-next-line no-await-in-loop
-                    const { data } = yield axios_1.default.get(`${url}/${changelogArr[i]}`);
-                    const [changelog, changelogPre] = (0, util_1.getChangelog)(data, version, prettier !== '');
-                    arr.push(changelog);
-                    real.push(changelogPre);
-                    if (changelog && i !== changelogArr.length - 1) {
-                        arr.push('---');
+                    const changelogPath = changelogArr[i];
+                    // match changelog path by shortPackageName
+                    if (changelogPath.includes(shortPackageName)) {
+                        const { data } = yield axios_1.default.get(`${url}/${changelogArr[i]}`);
+                        const [changelog, changelogPre] = (0, util_1.getChangelog)(data, version, prettier !== '');
+                        arr.push(changelog);
+                        real.push(changelogPre);
+                        if (changelog && i !== changelogArr.length - 1) {
+                            arr.push('---');
+                        }
                     }
                 }
                 show = arr.join('\n');
@@ -42426,17 +42431,17 @@ function main() {
                 yield octokit.repos.createRelease({
                     owner,
                     repo,
-                    tag_name: version,
-                    name: version,
+                    tag_name: ref,
+                    name: ref,
                     body: show,
                     draft: !!draft,
                     prerelease: pre,
                     make_latest: makeLatest,
                 });
-                info(`[Actions] Success release ${version}.`);
+                info(`[Actions] Success release ${ref}.`);
             }
             else {
-                info(`[Actions] Skip release ${version}.`);
+                info(`[Actions] Skip release ${ref}.`);
             }
             let ddNotice = !pre;
             if (prereleaseNotice && pre) {
@@ -42468,7 +42473,7 @@ function main() {
                     msgTitle = replaceMsg4Me(msgTitle);
                 }
                 else {
-                    msgTitle = `# ${version} 发布日志`;
+                    msgTitle = `# ${ref} 发布日志`;
                 }
                 if (msgHead) {
                     log = `${replaceMsg4Me(msgHead)}\n\n${log}`;
@@ -42499,13 +42504,13 @@ function main() {
                             yield axios_1.default.post(`https://oapi.dingtalk.com/robot/send?access_token=${dingdingTokenKey}`, {
                                 msgtype: 'markdown',
                                 markdown: {
-                                    title: `${version} 发布日志`,
+                                    title: 'OceanBase Design 发布日志',
                                     text: `${msgTitle} \n\n ${log}`,
                                 },
                             });
                         }
                     }
-                    info(`[Actions] Success post dingding message of ${version}`);
+                    info(`[Actions] Success post dingding message of ${ref}`);
                 }), +time * 1000 * 60);
             }
         }
@@ -42534,8 +42539,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.execOutput = exports.replaceMsg = exports.filterChangelogs = exports.getChangelog = void 0;
+exports.execOutput = exports.replaceMsg = exports.filterChangelogs = exports.getChangelog = exports.parseTag = void 0;
 const exec_1 = __nccwpck_require__(1514);
+const parseTag = (str) => {
+    const match1 = str.match(/(\S+)@(\S+)/);
+    const packageName = (match1 && match1[1]);
+    const version = (match1 && match1[2]);
+    const match2 = str.match(/^@(\S+)\/(\S+)@(\S+)/);
+    const shortPackageName = (match2 && match2[2]);
+    return {
+        packageName,
+        shortPackageName,
+        version,
+    };
+};
+exports.parseTag = parseTag;
 const getChangelog = (content, version, prettier) => {
     const lines = content.split('\n');
     const changeLog = [];
@@ -42582,7 +42600,7 @@ exports.filterChangelogs = filterChangelogs;
 const replaceMsg = (msg, version, owner, repo) => {
     return msg
         .replace('{{v}}', version)
-        .replace('{{url}}', `https://github.com/${owner}/${repo}/releases/tag/${version}`);
+        .replace('{{url}}', `https://github.com/${owner}/${repo}/releases`);
 };
 exports.replaceMsg = replaceMsg;
 const execOutput = (command) => __awaiter(void 0, void 0, void 0, function* () {

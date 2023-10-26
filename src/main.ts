@@ -3,8 +3,7 @@ import * as github from '@actions/github';
 import { Octokit } from '@octokit/rest';
 import { dealStringToArr } from 'actions-util';
 import axios from 'axios';
-
-import { execOutput, filterChangelogs, getChangelog, replaceMsg } from './util';
+import { parseTag, execOutput, filterChangelogs, getChangelog, replaceMsg } from './util';
 
 // **********************************************************
 async function main(): Promise<void> {
@@ -41,8 +40,10 @@ async function main(): Promise<void> {
     const { info, error } = core;
 
     info(`owner: ${owner}, repo: ${repo}`);
-    const { ref_type: refType, ref: version } = github.context.payload;
-    info(`ref_type: ${refType}, ref: ${version}`);
+    const { ref_type: refType, ref } = github.context.payload;
+    info(`ref_type: ${refType}, ref: ${ref}`);
+    const { packageName, shortPackageName, version } = parseTag(ref);
+    info(`packageName: ${packageName}, ref: ${ref}, shortPackageName: ${shortPackageName}, version: ${version}`);
     info(`github.context.payload: ${JSON.stringify(github.context.payload)}`)
 
     // if (refType !== trigger) {
@@ -82,13 +83,16 @@ async function main(): Promise<void> {
       const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
       info(`url: ${url}`);
       for (let i = 0; i < changelogArr.length; i += 1) {
-        // eslint-disable-next-line no-await-in-loop
-        const { data } = await axios.get(`${url}/${changelogArr[i]}`);
-        const [changelog, changelogPre] = getChangelog(data, version, prettier !== '');
-        arr.push(changelog);
-        real.push(changelogPre);
-        if (changelog && i !== changelogArr.length - 1) {
-          arr.push('---');
+        const changelogPath = changelogArr[i];
+        // match changelog path by shortPackageName
+        if (changelogPath.includes(shortPackageName)) {
+          const { data } = await axios.get(`${url}/${changelogArr[i]}`);
+          const [changelog, changelogPre] = getChangelog(data, version, prettier !== '');
+          arr.push(changelog);
+          real.push(changelogPre);
+          if (changelog && i !== changelogArr.length - 1) {
+            arr.push('---');
+          }
         }
       }
       show = arr.join('\n');
@@ -112,16 +116,16 @@ async function main(): Promise<void> {
       await octokit.repos.createRelease({
         owner,
         repo,
-        tag_name: version,
-        name: version,
+        tag_name: ref,
+        name: ref,
         body: show,
         draft: !!draft,
         prerelease: pre,
         make_latest: makeLatest as any,
       });
-      info(`[Actions] Success release ${version}.`);
+      info(`[Actions] Success release ${ref}.`);
     } else {
-      info(`[Actions] Skip release ${version}.`);
+      info(`[Actions] Skip release ${ref}.`);
     }
 
     let ddNotice = !pre;
@@ -157,7 +161,7 @@ async function main(): Promise<void> {
       if (msgTitle) {
         msgTitle = replaceMsg4Me(msgTitle);
       } else {
-        msgTitle = `# ${version} 发布日志`;
+        msgTitle = `# ${ref} 发布日志`;
       }
 
       if (msgHead) {
@@ -195,7 +199,7 @@ async function main(): Promise<void> {
               {
                 msgtype: 'markdown',
                 markdown: {
-                  title: `${version} 发布日志`,
+                  title: 'OceanBase Design 发布日志',
                   text: `${msgTitle} \n\n ${log}`,
                 },
               },
@@ -203,7 +207,7 @@ async function main(): Promise<void> {
           }
         }
 
-        info(`[Actions] Success post dingding message of ${version}`);
+        info(`[Actions] Success post dingding message of ${ref}`);
       }, +time * 1000 * 60);
     }
   } catch (e: any) {

@@ -1,5 +1,18 @@
 import { exec } from '@actions/exec';
 
+export const parseTag = (str: string) => {
+  const match1 = str.match(/(\S+)@(\S+)/);
+  const packageName = (match1 && match1[1]) as string;
+  const version = (match1 && match1[2]) as string;
+  const match2 = str.match(/^@(\S+)\/(\S+)@(\S+)/);
+  const shortPackageName = (match2 && match2[2]) as string;
+  return {
+    packageName,
+    shortPackageName,
+    version,
+  }
+}
+
 export const getChangelog = (content: string, version: string, prettier: boolean): string[] => {
   const lines = content.split('\n');
   const changeLog = [];
@@ -44,7 +57,7 @@ export const filterChangelogs = (changelogArr: string[], filter: string, arr: st
 export const replaceMsg = (msg: string, version: string, owner: string, repo: string) => {
   return msg
     .replace('{{v}}', version)
-    .replace('{{url}}', `https://github.com/${owner}/${repo}/releases/tag/${version}`);
+    .replace('{{url}}', `https://github.com/${owner}/${repo}/releases`);
 };
 
 export const execOutput = async (command: string) => {
