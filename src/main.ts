@@ -21,9 +21,12 @@ async function main(): Promise<void> {
     const changelogPathArr = dealStringToArr(changelogs);
     const dingdingChangelogPathArr = dealStringToArr(dingdingChangelogs);
 
-    const { owner, repo } = github.context.repo;
     const { info, error } = core;
+
+    const { owner, repo } = github.context.repo;
+    const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
     info(`owner: ${owner}, repo: ${repo}`);
+    info(`url: ${url}`);
 
     const { head_commit } = github.context.payload;
     const { message } = head_commit;
@@ -32,40 +35,42 @@ async function main(): Promise<void> {
       return;
     } else {
       const { tagList } = parseLernaCommit(message);
-      const dingdingChangelogArr: { tag: string, dingdingArr: string[] }[] = [];
+      const dingdingChangelogArr: { tag: string, changelog: string }[] = [];
       tagList.forEach(async tag => {
         const { shortPackageName, version } = parseLernaTag(tag);
 
         const releaseArr = [];
         const dingdingArr = [];
 
-        const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
-        info(`url: ${url}`);
-
         for (let i = 0; i < changelogPathArr.length; i += 1) {
           const changelogPath = changelogPathArr[i];
           // match changelog path by shortPackageName
           if (changelogPath.includes(shortPackageName)) {
-            const { data } = await axios.get(`${url}/${changelogPathArr[i]}`);
+            const changelogUrl = `${url}/${changelogPathArr[i]}`
+            info(`changelog url: ${changelogUrl}`);
+
+            const { data } = await axios.get(changelogUrl);
             const [changelog, changelogPre] = getChangelog(data, version, prettier !== '');
-            releaseArr.push(changelog);
-            if (changelog && i !== changelogPathArr.length - 1) {
-              releaseArr.push('---');
+            info(`changelog: ${changelog}`);
+
+            if (changelog && i) {
+              releaseArr.push(changelog);
             }
 
+            info(`changelog: ${changelogPre}`);
+
             // only push changelog for dingding
-            if (dingdingChangelogPathArr.includes(changelogPath)) {
+            if (changelogPre && dingdingChangelogPathArr.includes(changelogPath)) {
               dingdingArr.push(changelogPre);
-            }
-            if (changelog && i !== changelogPathArr.length - 1) {
-              dingdingArr.push('\n\n');
             }
           }
         }
-        dingdingChangelogArr.push({
-          tag,
-          dingdingArr,
-        })
+        if (dingdingArr.length > 0) {
+          dingdingChangelogArr.push({
+            tag,
+            changelog: dingdingArr.join('\n\n'),
+          });
+        }
 
         const release = core.getInput('release');
         if (release !== 'false') {
@@ -74,21 +79,21 @@ async function main(): Promise<void> {
             repo,
             tag_name: tag,
             name: tag,
-            body: releaseArr.join('\n'),
+            body: releaseArr.join('\n---\n'),
             draft: false,
             prerelease: false,
             make_latest: 'true',
           });
-          info(`[Actions] Success release ${tag}.`);
+          info(`[Actions] Success release ${tag}`);
         } else {
-          info(`[Actions] Skip release ${tag}.`);
+          info(`[Actions] Skip release ${tag}`);
         }
       });
 
       if (dingdingToken) {
         let log = dingdingChangelogArr.map(item => {
-          return `## ${item.tag}\n${item.dingdingArr.join('')}`
-        }).join('---');
+          return `## ${item.tag}\n${item.changelog}`
+        }).join('\n\n');
         let msgTitle = core.getInput('msg-title');
         const msgPoster = core.getInput('msg-poster');
         let msgFooter = core.getInput('msg-footer');
@@ -104,11 +109,13 @@ async function main(): Promise<void> {
           log += `\n\n${msgFooter}`;
         }
 
+        info(`log: ${log}`);
+
         const time = core.getInput('dingding-delay-minute') || 0;
-        info(`[Actions] [time] ${time} start: ${Date.now().toLocaleString()}`);
+        info(`[Actions] [time] ${time} start: ${new Date().toISOString()} `);
 
         setTimeout(async () => {
-          info(`[Actions] [time] ${time} go: ${Date.now().toLocaleString()}`);
+          info(`[Actions][time] ${time} go: ${new Date().toISOString()} `);
           const dingdingTokenArr = dingdingToken.split(' ');
           /* eslint-disable no-await-in-loop, no-restricted-syntax */
           for (const dingdingTokenKey of dingdingTokenArr) {
@@ -126,15 +133,7 @@ async function main(): Promise<void> {
             }
           }
 
-          const formatTagString = tagList.map((tag, index) => {
-            if (index === tagList.length - 1) {
-              return `- ${tag}`;
-            }
-            return `- ${tag}\n`;
-          }).join('')
-
-          info('[Actions] Success post dingding message for:');
-          info(formatTagString);
+          info('[Actions] Success post dingding message for all release packages.');
         }, +time * 1000 * 60);
       }
     }
