@@ -43,11 +43,12 @@ async function main(): Promise<void> {
     info(`owner: ${owner}, repo: ${repo}`);
     const { ref_type: refType, ref: version } = github.context.payload;
     info(`ref_type: ${refType}, ref: ${version}`);
+    info(`github.context.payload: ${JSON.stringify(github.context.payload)}`)
 
-    if (refType !== trigger) {
-      error("[Actions] The input 'triger' not match acionts 'on'");
-      return;
-    }
+    // if (refType !== trigger) {
+    //   error("[Actions] The input 'trigger' not match actions 'on'");
+    //   return;
+    // }
     let conch = 'conch';
     info(`tags: ${JSON.stringify(tags)}`);
     if (tags && tags.length) {
@@ -78,7 +79,7 @@ async function main(): Promise<void> {
 
     let show = '';
     if (branch) {
-      const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/`;
+      const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}`;
       info(`url: ${url}`);
       for (let i = 0; i < changelogArr.length; i += 1) {
         // eslint-disable-next-line no-await-in-loop
