@@ -42359,7 +42359,7 @@ function main() {
             else {
                 const { tagList } = (0, util_1.parseLernaCommit)(message);
                 const dingdingChangelogArr = [];
-                tagList.forEach((tag) => __awaiter(this, void 0, void 0, function* () {
+                yield tagList.forEach((tag) => __awaiter(this, void 0, void 0, function* () {
                     const { shortPackageName, version } = (0, util_1.parseLernaTag)(tag);
                     const releaseArr = [];
                     const dingdingArr = [];
@@ -42368,16 +42368,18 @@ function main() {
                         // match changelog path by shortPackageName
                         if (changelogPath.includes(shortPackageName)) {
                             const changelogUrl = `${url}/${changelogPathArr[i]}`;
-                            info(`changelog url: ${changelogUrl}`);
+                            info(`${tag} changelog url: ${changelogUrl}`);
                             const { data } = yield axios_1.default.get(changelogUrl);
                             const [changelog, changelogPre] = (0, util_1.getChangelog)(data, version, prettier !== '');
-                            info(`changelog: ${changelog}`);
-                            if (changelog && i) {
+                            if (changelog) {
+                                info(`${tag} changelog:`);
+                                info(changelog);
                                 releaseArr.push(changelog);
                             }
-                            info(`changelog: ${changelogPre}`);
                             // only push changelog for dingding
                             if (changelogPre && dingdingChangelogPathArr.includes(changelogPath)) {
+                                info(`${tag} changelog for dingding:`);
+                                info(changelogPre);
                                 dingdingArr.push(changelogPre);
                             }
                         }
@@ -42385,7 +42387,7 @@ function main() {
                     if (dingdingArr.length > 0) {
                         dingdingChangelogArr.push({
                             tag,
-                            changelog: dingdingArr.join('\n\n'),
+                            changelog: dingdingArr.join(''),
                         });
                     }
                     const release = core.getInput('release');
