@@ -12,11 +12,11 @@ async function main(): Promise<void> {
     const token = core.getInput('token');
     const octokit = new Octokit({ auth: `token ${token}` });
 
-    const dingdingToken = core.getInput('dingding-token');
+    const branch = core.getInput('branch');
     const changelogs = core.getInput('changelogs');
     const dingdingChangelogs = core.getInput('dingding-changelogs');
-    const branch = core.getInput('branch');
-    const prettier = core.getInput('prettier');
+    const dingdingToken = core.getInput('dingding-token');
+    const prettier = core.getInput('dingding-message-prettier');
 
     const changelogPathArr = dealStringToArr(changelogs);
     const dingdingChangelogPathArr = dealStringToArr(dingdingChangelogs);
@@ -92,25 +92,22 @@ async function main(): Promise<void> {
         }
       }
 
-
-
       if (dingdingToken) {
         let log = dingdingChangelogArr.map(item => {
-          return `## ${item.tag}\n${item.changelog}`
-        }).join('\n\n');
-        let msgTitle = core.getInput('msg-title');
-        const msgPoster = core.getInput('msg-poster');
-        let msgFooter = core.getInput('msg-footer');
+          return `## ${item.tag}\n\n${item.changelog}`
+        }).join('\n\n\n\n');
+        let messageTitle = core.getInput('dingding-message-title');
+        const messagePoster = core.getInput('dingding-message-poster');
+        let messageFooter = core.getInput('dingding-message-footer');
 
-        if (msgPoster) {
-          log = `![](${msgPoster})\n\n${log}`;
+        if (messagePoster) {
+          log = `![](${messagePoster})\n\n${log}`;
         }
-        if (msgTitle) {
-          log = `${msgTitle}\n\n${log}`
+        if (messageTitle) {
+          log = `${messageTitle}\n\n${log}`
         }
-        if (msgFooter) {
-          msgFooter = msgFooter.replace('{{url}}', `https://github.com/${owner}/${repo}/releases`)
-          log += `\n\n${msgFooter}`;
+        if (messageFooter) {
+          log += `\n\n\n\n${messageFooter}`;
         }
 
         info(`log: ${log}`);
@@ -129,7 +126,7 @@ async function main(): Promise<void> {
                 {
                   msgtype: 'markdown',
                   markdown: {
-                    title: msgTitle,
+                    title: messageTitle,
                     text: log,
                   },
                 },

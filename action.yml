@@ -1,57 +1,29 @@
 name: 'Monorepo Release Helper'
-description: 'A GitHub Action that help you publish release.'
+description: 'A GitHub Action that help you publish monorepo release'
 author: 'dengfuping'
 branding:
   icon: 'shield'
-  color: 'purple'
+  color: 'blue'
 inputs:
-  triger:
-    description: 'How to start'
-  trigger:
-    description: 'How to start'
-  token:
-    description: 'Github token'
-    default: ${{ github.token }}
-  dingding-token:
-    description: 'DingTalk token'
-  dingding-delay-minute:
-    description: 'DingTalk notice setTimeout'
-  msg-title:
-    description: 'message title'
-  msg-head:
-    description: 'message head'
-  msg-poster:
-    description: 'message poster'
-  msg-footer:
-    description: 'message footer'
-  prettier:
-    description: 'DingTale message prettier'
-  dingding-ignore:
-    description: 'DingTalk ignore when version contain'
   branch:
-    description: 'Branch'
-  tag:
-    description: 'Tag for branch'
-  conch-tag:
-    description: 'Tag for conch'
+    description: 'The changelog file branch'
   changelogs:
-    description: 'Changelogs'
+    description: 'The changelog file path'
   dingding-changelogs:
-    description: 'Changelogs for DingTalk'
-  draft:
-    description: 'Release draft'
-  prerelease:
-    description: 'Release prerelease'
-  prerelease-filter:
-    description: 'Prerelease filter'
-  prerelease-notice:
-    description: 'Prerelease notice'
-  antd-conch-msg:
-    description: 'Only for antd'
-  release:
-    description: 'Whether release'
-  latest:
-    description: 'latest for tag'
+    description: 'The changelog file path for DingTalk'
+  dingding-token:
+    description: 'DingTalk token, support multiple token'
+  dingding-delay-minute:
+    description: 'DingTalk delay time for posting message'
+  dingding-message-title:
+    description: 'DingTalk message title'
+  dingding-message-poster:
+    description: 'DingTalk poster url'
+  dingding-message-footer:
+    description: 'DingTalk message footer'
+  dingding-message-prettier:
+    description: 'whether to prettier DingTalk message'
+
 runs:
   using: node16
   main: 'dist/index.js'
