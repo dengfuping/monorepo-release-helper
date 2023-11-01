@@ -39,17 +39,18 @@ jobs:
 
 ### Inputs
 
-| Name                      | Desc                                    | Type    | Required |
-| ------------------------- | --------------------------------------- | ------- | -------- |
-| branch                    | The changelog file branch               | string  | ✔        |
-| changelogs                | The changelog file path                 | string  | ✔        |
-| dingding-changelogs       | The changelog file path for DingTalk    | string  | ✖        |
-| dingding-token            | DingTalk token, support multiple token  | string  | ✖        |
-| dingding-delay-minute     | DingTalk delay time for posting message | string  | ✖        |
-| dingding-message-title    | DingTalk message title                  | string  | ✖        |
-| dingding-message-poster   | DingTalk poster url                     | string  | ✖        |
-| dingding-message-footer   | DingTalk message footer                 | string  | ✖        |
-| dingding-message-prettier | whether to prettier DingTalk message    | boolean | ✖        |
+| Name | Desc | Type | Required |
+| --- | --- | --- | --- |
+| branch | The changelog file branch | string | ✔ |
+| changelogs | The changelog file path | string | ✔ |
+| dingding-changelogs | The changelog file path for DingTalk | string | ✖ |
+| dingding-token | DingTalk token, support multiple token | string | ✖ |
+| dingding-delay-minute | DingTalk delay time for posting message | string | ✖ |
+| dingding-message-title | DingTalk message title | string | ✖ |
+| dingding-message-poster | DingTalk poster url | string | ✖ |
+| dingding-message-footer | DingTalk message footer | string | ✖ |
+| dingding-message-prettier | whether to prettier DingTalk message | boolean | ✖ |
+| token | Github token, default value is `${{ github.token }}` | string | ✖ |
 
 - [Integrate with dingding bot](https://developers.dingtalk.com/document/robots/custom-robot-access)
 - Recommond to prettier dingding message for better nested list style.

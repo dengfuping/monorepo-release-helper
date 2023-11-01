@@ -23,6 +23,9 @@ inputs:
     description: 'DingTalk message footer'
   dingding-message-prettier:
     description: 'whether to prettier DingTalk message'
+  token:
+    description: 'Github token'
+    default: ${{ github.token }}
 
 runs:
   using: node16

@@ -5,10 +5,10 @@ import { dealStringToArr } from 'actions-util';
 import axios from 'axios';
 import { parseLernaCommit, parseLernaTag, getChangelog } from './util';
 
-// **********************************************************
 async function main(): Promise<void> {
   try {
-    // **********************************************************
+    // Github token, defined in action.yml
+    // default value is ${{ github.token }}
     const token = core.getInput('token');
     const octokit = new Octokit({ auth: `token ${token}` });
 

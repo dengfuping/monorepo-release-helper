@@ -42331,11 +42331,11 @@ const rest_1 = __nccwpck_require__(5375);
 const actions_util_1 = __nccwpck_require__(6972);
 const axios_1 = __importDefault(__nccwpck_require__(6545));
 const util_1 = __nccwpck_require__(2629);
-// **********************************************************
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            // **********************************************************
+            // Github token, defined in action.yml
+            // default value is ${{ github.token }}
             const token = core.getInput('token');
             const octokit = new rest_1.Octokit({ auth: `token ${token}` });
             const branch = core.getInput('branch');
